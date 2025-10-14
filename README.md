@@ -32,7 +32,7 @@ sudo apt install jq socat
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/hyprland-workspace-manager.git
+git clone https://github.com/mrlarsendk/hyprland-workspace-manager.git
 cd hyprland-workspace-manager
 ```
 
