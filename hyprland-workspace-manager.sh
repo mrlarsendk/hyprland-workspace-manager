@@ -15,13 +15,25 @@ get_external_monitor() {
 
 # Function to bind workspaces to monitors
 bind_workspaces() {
+    # Wait for monitors to be fully initialized
+    sleep 1
+
+    # Check if internal monitor exists
+    local internal_exists=$(hyprctl monitors -j | jq -r ".[] | select(.name == \"$INTERNAL\") | .name")
+    if [ -z "$internal_exists" ]; then
+        echo "Error: Internal monitor $INTERNAL not found."
+        echo "Available monitors:"
+        hyprctl monitors -j | jq -r '.[].name'
+        return 1
+    fi
+
     local external_monitor=$(get_external_monitor)
 
     # If no external monitor detected, only bind workspace 1
     if [ -z "$external_monitor" ]; then
         echo "No external monitor detected."
         echo "Binding workspace 1 to $INTERNAL only."
-        hyprctl keyword workspace "1,monitor:$INTERNAL,persistent:true,default:true"
+        hyprctl keyword workspace "1,monitor:$INTERNAL default:true persistent:true" 2>/dev/null
         return
     fi
 
@@ -30,11 +42,11 @@ bind_workspaces() {
     echo "External monitor: $external_monitor (workspaces 2-10)"
 
     # Bind workspace 1 to internal display
-    hyprctl keyword workspace "1,monitor:$INTERNAL,persistent:true,default:true"
+    hyprctl keyword workspace "1,monitor:$INTERNAL default:true persistent:true" 2>/dev/null
 
     # Bind workspaces 2-10 to external monitor
     for i in {2..10}; do
-        hyprctl keyword workspace "$i,monitor:$external_monitor,default:true"
+        hyprctl keyword workspace "$i,monitor:$external_monitor default:true" 2>/dev/null
     done
 
     echo "Workspace bindings applied successfully!"
@@ -52,10 +64,24 @@ enforce_workspace_1() {
 
 # Function to monitor and maintain workspace arrangement
 monitor_workspaces() {
+    # Check if HYPRLAND_INSTANCE_SIGNATURE is set
+    if [ -z "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+        echo "Error: HYPRLAND_INSTANCE_SIGNATURE not set. Monitor mode requires running inside Hyprland."
+        exit 1
+    fi
+
+    local socket_path="/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
+
+    # Check if socket exists
+    if [ ! -S "$socket_path" ]; then
+        echo "Error: Hyprland socket not found at $socket_path"
+        exit 1
+    fi
+
     echo "Monitoring workspace changes... (Press Ctrl+C to stop)"
 
     # Subscribe to workspace events
-    socat -U - UNIX-CONNECT:/tmp/hypr/"$HYPRLAND_INSTANCE_SIGNATURE"/.socket2.sock | while read -r line; do
+    socat -U - UNIX-CONNECT:"$socket_path" | while read -r line; do
         # Check events related to workspace changes
         if [[ "$line" == workspace* ]] || [[ "$line" == moveworkspace* ]]; then
             enforce_workspace_1
