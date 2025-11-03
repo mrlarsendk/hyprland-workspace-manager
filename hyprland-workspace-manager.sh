@@ -7,8 +7,35 @@
 # Configuration file location
 CONFIG_DIR="$HOME/.config/hyprland"
 CONFIG_FILE="$CONFIG_DIR/workspace-manager.json"
+STATE_FILE="$HOME/.cache/workspace-manager-state"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_CONFIG="$SCRIPT_DIR/workspace-manager.json"
+
+# Parse command-line arguments
+FORCE_PROFILE=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --profile)
+            FORCE_PROFILE="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --profile <name>  Force a specific profile (e.g., HDMI-A-1, default)"
+            echo "  --help, -h        Show this help message"
+            echo ""
+            echo "Configuration file: $CONFIG_FILE"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 # Ensure config directory exists
 mkdir -p "$CONFIG_DIR"
@@ -57,13 +84,27 @@ if [ -z "$external_monitor" ]; then
     exit 1
 fi
 
-# Get profile for this monitor (fall back to default if not found)
-profile_exists=$(jq -r ".profiles[\"$external_monitor\"] // empty" "$CONFIG_FILE")
-if [ -z "$profile_exists" ]; then
-    echo "No specific profile found for $external_monitor, using default"
-    profile_name="default"
+# Determine which profile to use
+if [ -n "$FORCE_PROFILE" ]; then
+    # Use forced profile
+    profile_name="$FORCE_PROFILE"
+    profile_exists=$(jq -r ".profiles[\"$profile_name\"] // empty" "$CONFIG_FILE")
+    if [ -z "$profile_exists" ]; then
+        echo "Error: Profile '$profile_name' not found in config"
+        echo "Available profiles:"
+        jq -r '.profiles | keys[]' "$CONFIG_FILE"
+        exit 1
+    fi
+    echo "Using forced profile: $profile_name"
 else
-    profile_name="$external_monitor"
+    # Auto-detect profile based on external monitor
+    profile_exists=$(jq -r ".profiles[\"$external_monitor\"] // empty" "$CONFIG_FILE")
+    if [ -z "$profile_exists" ]; then
+        echo "No specific profile found for $external_monitor, using default"
+        profile_name="default"
+    else
+        profile_name="$external_monitor"
+    fi
 fi
 
 # Read workspace configuration from profile
@@ -114,3 +155,23 @@ echo ""
 echo "✓ Workspace arrangement complete!"
 echo "  Workspaces ${internal_workspaces[*]} → $INTERNAL"
 echo "  Workspaces ${external_workspaces[*]} → $external_monitor"
+
+# Write state file for waybar integration
+mkdir -p "$(dirname "$STATE_FILE")"
+jq -n \
+    --arg profile "$profile_name" \
+    --arg name "$profile_display_name" \
+    --arg monitor "$external_monitor" \
+    --argjson internal "$(printf '%s\n' "${internal_workspaces[@]}" | jq -R . | jq -s .)" \
+    --argjson external "$(printf '%s\n' "${external_workspaces[@]}" | jq -R . | jq -s .)" \
+    '{
+        profile: $profile,
+        name: $name,
+        monitor: $monitor,
+        internal_workspaces: $internal,
+        external_workspaces: $external,
+        timestamp: now
+    }' > "$STATE_FILE"
+
+# Signal waybar to update (if running)
+pkill -RTMIN+12 waybar 2>/dev/null || true

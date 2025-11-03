@@ -1,0 +1,20 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 30,
+
+    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-center": ["clock"],
+    "modules-right": ["pulseaudio", "network", "battery", "custom/workspace-manager", "tray"],
+
+    "custom/workspace-manager": {
+        "format": " {}",
+        "return-type": "json",
+        "interval": 30,
+        "exec": "~/.config/waybar/scripts/waybar-workspace-manager.sh status",
+        "on-click": "~/.config/waybar/scripts/waybar-workspace-manager.sh menu",
+        "signal": 12,
+        "escape": true,
+        "tooltip": true
+    }
+}

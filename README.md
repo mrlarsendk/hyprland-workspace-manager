@@ -7,6 +7,7 @@ Configurable workspace arrangement script for Hyprland on dual monitor setups. U
 - **JSON Configuration**: Define custom workspace arrangements per external monitor
 - **Monitor-Specific Profiles**: Different layouts for home monitor, office monitor, etc.
 - **Auto-detection**: Automatically detects connected monitors and applies the right profile
+- **Waybar Integration**: Visual indicator and quick profile switching from your status bar
 - **Workspace Migration**: Moves existing workspaces to correct monitors before applying bindings
 - **One-Time Execution**: Run manually or via keybinding to force workspace arrangement
 - **Wayland Native**: Built specifically for Hyprland on Wayland
@@ -162,6 +163,85 @@ The script uses a JSON configuration file located at `~/.config/hyprland/workspa
    ```
 
 The script will automatically use the appropriate profile when you connect different monitors. If no specific profile exists for a monitor, it will use the "default" profile.
+
+## Waybar Integration
+
+The workspace manager can be integrated with waybar for a visual interface to switch between profiles.
+
+### Features
+
+- **Visual Indicator**: Shows current profile in your waybar
+- **Click to Switch**: Click the icon to open a menu with available profiles
+- **Tooltip**: Hover to see detailed workspace configuration
+- **Auto-Update**: Updates automatically when profiles change
+
+### Installation
+
+Run the installation helper:
+```bash
+./scripts/install-waybar.sh
+```
+
+This will:
+1. Copy the waybar module script to `~/.config/waybar/scripts/`
+2. Show you the configuration to add to your waybar config
+3. Provide example CSS styling
+
+### Manual Installation
+
+1. **Copy the script**:
+   ```bash
+   cp scripts/waybar-workspace-manager.sh ~/.config/waybar/scripts/
+   chmod +x ~/.config/waybar/scripts/waybar-workspace-manager.sh
+   ```
+
+2. **Add to waybar config** (`~/.config/waybar/config`):
+   ```json
+   {
+       "modules-right": ["...", "custom/workspace-manager", "..."],
+
+       "custom/workspace-manager": {
+           "format": " {}",
+           "return-type": "json",
+           "interval": 30,
+           "exec": "~/.config/waybar/scripts/waybar-workspace-manager.sh status",
+           "on-click": "~/.config/waybar/scripts/waybar-workspace-manager.sh menu",
+           "signal": 12,
+           "escape": true
+       }
+   }
+   ```
+
+3. **(Optional) Add styling** to `~/.config/waybar/style.css`:
+   ```css
+   #custom-workspace-manager {
+       padding: 0 10px;
+       color: #a6e3a1;
+   }
+
+   #custom-workspace-manager.inactive {
+       color: #6c7086;
+   }
+   ```
+
+4. **Restart waybar**:
+   ```bash
+   pkill waybar && waybar &
+   ```
+
+### Requirements
+
+The waybar integration requires either **wofi** (recommended for Wayland) or **rofi** for the profile selection menu:
+
+```bash
+# Arch Linux
+sudo pacman -S wofi
+
+# Ubuntu/Debian
+sudo apt install wofi
+```
+
+See `examples/` directory for complete config and style examples.
 
 ## How It Works
 

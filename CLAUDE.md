@@ -87,8 +87,43 @@ When modifying this script:
 
 ## Integration Points
 
+### Hyprland Integration
+
 Users can integrate this script into `~/.config/hypr/hyprland.conf` using:
 - `exec-once = /path/to/hyprland-workspace-manager.sh` for startup arrangement
 - Bind to a keybinding for manual triggering: `bind = $mainMod, W, exec, /path/to/hyprland-workspace-manager.sh`
 
 For automatic triggering when monitors change, users can create a udev rule or use a separate monitor detection script.
+
+### Waybar Integration
+
+The project includes waybar integration for visual profile switching:
+
+**Components:**
+- `scripts/waybar-workspace-manager.sh`: Waybar custom module script
+- `scripts/install-waybar.sh`: Installation helper
+- `examples/waybar-config-example.json`: Example waybar config
+- `examples/waybar-style-example.css`: Example CSS styling
+
+**Architecture:**
+1. Main script writes state file to `~/.cache/workspace-manager-state` after applying profiles
+2. Waybar module reads state file and outputs JSON for display
+3. On click, waybar module shows wofi/rofi menu with available profiles
+4. Selecting a profile runs main script with `--profile` flag
+5. Main script signals waybar (RTMIN+12) after changes for instant updates
+
+**State File Format:**
+```json
+{
+  "profile": "DP-7",
+  "name": "Office DisplayPort Monitor",
+  "monitor": "DP-7",
+  "internal_workspaces": [1],
+  "external_workspaces": [2, 3, 4, 5, 6, 7, 8, 9, 10],
+  "timestamp": 1234567890
+}
+```
+
+**Command-Line Flags:**
+- `--profile <name>`: Force a specific profile instead of auto-detection
+- `--help`: Show usage information

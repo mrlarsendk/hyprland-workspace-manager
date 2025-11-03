@@ -1,0 +1,25 @@
+/* Hyprland Workspace Manager Module Styling */
+
+#custom-workspace-manager {
+    padding: 0 10px;
+    margin: 0 5px;
+    background-color: #1e1e2e;
+    color: #a6e3a1;  /* Green for active profile */
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#custom-workspace-manager.inactive {
+    color: #6c7086;  /* Gray for inactive/not initialized */
+}
+
+#custom-workspace-manager.error {
+    color: #f38ba8;  /* Red for errors */
+    background-color: #3d1e2e;
+}
+
+/* Hover effect */
+#custom-workspace-manager:hover {
+    background-color: #313244;
+    cursor: pointer;
+}
