@@ -24,23 +24,15 @@ ICON=""
 
 # Function to get current state
 get_status() {
-    # Check if state file exists and is recent (less than 5 minutes old)
+    # Check if state file exists
     if [ ! -f "$STATE_FILE" ]; then
-        echo '{
-            "text": "N/A",
-            "tooltip": "No profile applied yet\nRun workspace manager to initialize",
-            "class": "inactive"
-        }'
+        jq -nc '{"text": "N/A", "tooltip": "No profile applied yet\nRun workspace manager to initialize", "class": "inactive"}'
         return
     fi
 
     # Read state file
     if ! state=$(cat "$STATE_FILE" 2>/dev/null); then
-        echo '{
-            "text": "ERR",
-            "tooltip": "Error reading state file",
-            "class": "error"
-        }'
+        jq -nc '{"text": "ERR", "tooltip": "Error reading state file", "class": "error"}'
         return
     fi
 
@@ -50,14 +42,17 @@ get_status() {
     internal_ws=$(echo "$state" | jq -r '.internal_workspaces // [] | map(tostring) | join(", ")')
     external_ws=$(echo "$state" | jq -r '.external_workspaces // [] | map(tostring) | join(", ")')
 
-    # Build tooltip
-    tooltip="Profile: $profile_name\nMonitor: $monitor\nInternal: [$internal_ws]\nExternal: [$external_ws]"
+    # Build tooltip (using actual newlines, not \n literals)
+    tooltip="Profile: $profile_name
+Monitor: $monitor
+Internal: [$internal_ws]
+External: [$external_ws]"
 
-    # Output JSON
-    jq -n \
+    # Output JSON (compact format for waybar)
+    jq -nc \
         --arg text "$monitor" \
         --arg tooltip "$tooltip" \
-        '{text: $text, tooltip: $tooltip, class: "active"}'
+        '{"text": $text, "tooltip": $tooltip, "class": "active"}'
 }
 
 # Function to show menu and apply selection
