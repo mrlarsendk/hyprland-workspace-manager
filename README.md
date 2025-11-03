@@ -231,29 +231,15 @@ This will:
 
 ### Requirements
 
-The waybar integration requires one of the following menu selectors (in order of preference):
+The waybar integration requires either **wofi** (recommended for Wayland) or **rofi** for the profile selection menu:
 
-1. **tui-selector** (recommended) - Fast TUI selector with fuzzy search
-   ```bash
-   # Install from the tui-selector project
-   cargo install tui-selector
-   # Or build from source: https://github.com/mrlarsendk/tui-selector
-   ```
+```bash
+# Arch Linux
+sudo pacman -S wofi
 
-2. **wofi** - Wayland-native menu
-   ```bash
-   # Arch Linux
-   sudo pacman -S wofi
-
-   # Ubuntu/Debian
-   sudo apt install wofi
-   ```
-
-3. **rofi** - X11/Wayland menu (fallback)
-   ```bash
-   sudo pacman -S rofi  # Arch
-   sudo apt install rofi  # Ubuntu/Debian
-   ```
+# Ubuntu/Debian
+sudo apt install wofi
+```
 
 See `examples/` directory for complete config and style examples.
 

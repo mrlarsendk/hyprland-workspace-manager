@@ -105,15 +105,13 @@ show_menu() {
         menu_items+="$profile_name ($monitor_id)\n"
     done
 
-    # Show menu using tui-selector, wofi, or rofi
-    if command -v tui-selector &> /dev/null; then
-        selected=$(echo -e "$menu_items" | tui-selector --prompt "Select Workspace Profile")
-    elif command -v wofi &> /dev/null; then
+    # Show menu using wofi or rofi
+    if command -v wofi &> /dev/null; then
         selected=$(echo -e "$menu_items" | wofi --dmenu --prompt "Select Workspace Profile:" --width 400 --height 300)
     elif command -v rofi &> /dev/null; then
         selected=$(echo -e "$menu_items" | rofi -dmenu -i -p "Select Workspace Profile:" -theme-str 'window {width: 400px;}')
     else
-        notify-send "Workspace Manager" "No menu selector found. Please install tui-selector, wofi, or rofi." -u critical
+        notify-send "Workspace Manager" "Neither wofi nor rofi found. Please install one." -u critical
         exit 1
     fi
 
