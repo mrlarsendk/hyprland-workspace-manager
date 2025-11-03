@@ -1,31 +1,30 @@
 # Hyprland Workspace Manager
 
-Automatic workspace arrangement script for Hyprland on dual monitor setups. Ensures workspace 1 stays on your internal display while all other workspaces go to your external monitor.
+Simple manual workspace arrangement script for Hyprland on dual monitor setups. Forces workspace 1 to your internal display while routing all other workspaces to your external monitor.
 
 ## Features
 
-- **Persistent Workspace 1**: Forces workspace 1 to always stay on the internal display (eDP-1)
+- **One-Time Execution**: Run manually or via keybinding to force workspace arrangement
 - **Auto-detection**: Automatically detects and uses any connected external monitor
 - **Monitor Independence**: Works with any external monitor name (DP-1, DP-6, HDMI-A-1, etc.)
-- **Continuous Monitoring**: Optional mode to enforce workspace arrangement in real-time
+- **Workspace Migration**: Moves existing workspaces to correct monitors before applying bindings
 - **Wayland Native**: Built specifically for Hyprland on Wayland
 
 ## Requirements
 
 - Hyprland window manager
 - `jq` - JSON processor for parsing Hyprland output
-- `socat` - For monitoring mode (optional)
 
 ### Installing Dependencies
 
 **Arch Linux:**
 ```bash
-sudo pacman -S jq socat
+sudo pacman -S jq
 ```
 
 **Ubuntu/Debian:**
 ```bash
-sudo apt install jq socat
+sudo apt install jq
 ```
 
 ## Installation
@@ -48,60 +47,44 @@ sudo cp hyprland-workspace-manager.sh /usr/local/bin/hyprland-workspace-manager
 
 ## Usage
 
-### Basic Commands
+### Basic Command
 
-**Apply workspace bindings (one-time):**
+**Force workspace arrangement:**
 ```bash
-./hyprland-workspace-manager.sh bind
+./hyprland-workspace-manager.sh
 ```
 
-**Enforce workspace 1 on internal display:**
-```bash
-./hyprland-workspace-manager.sh enforce
-```
-
-**Continuous monitoring mode:**
-```bash
-./hyprland-workspace-manager.sh monitor
-```
-
-**Show help:**
-```bash
-./hyprland-workspace-manager.sh --help
-```
+That's it! The script will:
+1. Detect your internal monitor (eDP-1) and external monitor
+2. Move workspace 1 to the internal monitor (if needed)
+3. Move workspaces 2-10 to the external monitor (if needed)
+4. Apply persistent bindings to prevent future drift
 
 ### Integration with Hyprland
 
 Add one of the following to your `~/.config/hypr/hyprland.conf`:
 
-**Option 1: Apply bindings on startup (recommended)**
+**Option 1: Run on startup**
 ```conf
-exec-once = /path/to/hyprland-workspace-manager.sh bind
+exec-once = /path/to/hyprland-workspace-manager.sh
 ```
 
-**Option 2: Continuous monitoring (more proactive)**
+**Option 2: Bind to a keybinding for manual triggering**
 ```conf
-exec-once = /path/to/hyprland-workspace-manager.sh monitor
+bind = $mainMod, W, exec, /path/to/hyprland-workspace-manager.sh
 ```
 
-### Automatic Re-application on Monitor Change
-
-To automatically reapply workspace bindings when monitors change, add this to your Hyprland config:
-
-```conf
-# Reapply workspace bindings when a monitor is connected/disconnected
-exec-once = socat -U - UNIX-CONNECT:/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock | while read -r line; do if [[ "$line" == monitor* ]]; then /path/to/hyprland-workspace-manager.sh bind; fi; done &
-```
+Replace `$mainMod` with your preferred modifier key (e.g., `SUPER`, `ALT`, etc.).
 
 ## How It Works
 
 The script performs the following actions:
 
 1. **Detects Monitors**: Automatically identifies your internal display (eDP-1) and any connected external monitor
-2. **Binds Workspaces**:
-   - Workspace 1 → Internal display (eDP-1) with persistent flag
-   - Workspaces 2-10 → External monitor
-3. **Enforces Rules**: In monitor mode, watches for workspace changes and prevents workspace 1 from being moved
+2. **Moves Workspaces**: Checks current workspace locations and moves them to correct monitors if needed
+3. **Binds Workspaces**:
+   - Workspace 1 → Internal display (eDP-1) with persistent and default flags
+   - Workspaces 2-10 → External monitor with default flag
 
 ## Configuration
 
@@ -121,15 +104,17 @@ hyprctl monitors
 
 **Script doesn't detect external monitor:**
 - Run `hyprctl monitors` to verify your monitor is detected by Hyprland
-- Check that your monitor name isn't `eDP-1`
+- Ensure both monitors are connected before running the script
+- Check that your external monitor name isn't `eDP-1`
 
 **Workspace 1 still moves to external monitor:**
-- Use monitor mode: `./hyprland-workspace-manager.sh monitor`
+- Run the script again to force the arrangement: `./hyprland-workspace-manager.sh`
 - Check for conflicting workspace rules in your Hyprland config
+- Consider binding the script to a keybinding for quick access
 
 **Command not found errors:**
 - Ensure `jq` is installed: `which jq`
-- For monitor mode, ensure `socat` is installed: `which socat`
+- Install jq if missing: `sudo pacman -S jq` (Arch) or `sudo apt install jq` (Ubuntu/Debian)
 
 ## License
 

@@ -1,118 +1,62 @@
 #!/usr/bin/env bash
 #
-# Hyprland Workspace Manager for Hybrid Dual Monitor Setup
-# Ensures workspace 1 stays on eDP-1 (internal) and all others on external monitor
+# Hyprland Workspace Manager - Simple One-Time Execution
+# Forces workspace 1 to eDP-1 (internal) and all others to external monitor
 #
 
 # Monitor names
 INTERNAL="eDP-1"
 
-# Function to get the current external monitor name
-get_external_monitor() {
-    # Get all monitors except the internal one
-    hyprctl monitors -j | jq -r ".[] | select(.name != \"$INTERNAL\") | .name" | head -n1
-}
+# Check if internal monitor exists
+internal_exists=$(hyprctl monitors -j | jq -r ".[] | select(.name == \"$INTERNAL\") | .name")
+if [ -z "$internal_exists" ]; then
+    echo "Error: Internal monitor $INTERNAL not found."
+    echo "Available monitors:"
+    hyprctl monitors -j | jq -r '.[].name'
+    exit 1
+fi
 
-# Function to bind workspaces to monitors
-bind_workspaces() {
-    # Wait for monitors to be fully initialized
-    sleep 1
+# Get the external monitor (first non-internal monitor)
+external_monitor=$(hyprctl monitors -j | jq -r ".[] | select(.name != \"$INTERNAL\") | .name" | head -n1)
 
-    # Check if internal monitor exists
-    local internal_exists=$(hyprctl monitors -j | jq -r ".[] | select(.name == \"$INTERNAL\") | .name")
-    if [ -z "$internal_exists" ]; then
-        echo "Error: Internal monitor $INTERNAL not found."
-        echo "Available monitors:"
-        hyprctl monitors -j | jq -r '.[].name'
-        return 1
+# Check if external monitor exists
+if [ -z "$external_monitor" ]; then
+    echo "Error: No external monitor detected."
+    echo "Only internal monitor $INTERNAL is connected."
+    exit 1
+fi
+
+echo "Detected monitors:"
+echo "  Internal: $INTERNAL"
+echo "  External: $external_monitor"
+echo ""
+
+# Move workspace 1 to internal monitor if it's on the wrong monitor
+ws1_monitor=$(hyprctl workspaces -j | jq -r '.[] | select(.id == 1) | .monitor')
+if [ "$ws1_monitor" != "$INTERNAL" ] && [ -n "$ws1_monitor" ]; then
+    echo "Moving workspace 1 from $ws1_monitor to $INTERNAL..."
+    hyprctl dispatch moveworkspacetomonitor "1 $INTERNAL"
+fi
+
+# Bind workspace 1 to internal display with persistent and default flags
+echo "Binding workspace 1 to $INTERNAL..."
+hyprctl keyword workspace "1,monitor:$INTERNAL,persistent:true,default:true" 2>/dev/null
+
+# Bind workspaces 2-10 to external monitor
+echo "Binding workspaces 2-10 to $external_monitor..."
+for i in {2..10}; do
+    # Move workspace to external monitor if it exists and is on the wrong monitor
+    ws_monitor=$(hyprctl workspaces -j | jq -r ".[] | select(.id == $i) | .monitor")
+    if [ -n "$ws_monitor" ] && [ "$ws_monitor" != "$external_monitor" ]; then
+        echo "  Moving workspace $i from $ws_monitor to $external_monitor..."
+        hyprctl dispatch moveworkspacetomonitor "$i $external_monitor"
     fi
 
-    local external_monitor=$(get_external_monitor)
+    # Apply binding
+    hyprctl keyword workspace "$i,monitor:$external_monitor,default:true" 2>/dev/null
+done
 
-    # If no external monitor detected, only bind workspace 1
-    if [ -z "$external_monitor" ]; then
-        echo "No external monitor detected."
-        echo "Binding workspace 1 to $INTERNAL only."
-        hyprctl keyword workspace "1,monitor:$INTERNAL default:true persistent:true" 2>/dev/null
-        return
-    fi
-
-    echo "Binding workspaces..."
-    echo "Internal monitor: $INTERNAL (workspace 1)"
-    echo "External monitor: $external_monitor (workspaces 2-10)"
-
-    # Bind workspace 1 to internal display
-    hyprctl keyword workspace "1,monitor:$INTERNAL default:true persistent:true" 2>/dev/null
-
-    # Bind workspaces 2-10 to external monitor
-    for i in {2..10}; do
-        hyprctl keyword workspace "$i,monitor:$external_monitor default:true" 2>/dev/null
-    done
-
-    echo "Workspace bindings applied successfully!"
-}
-
-# Function to move workspace 1 back to internal if it gets moved
-enforce_workspace_1() {
-    local ws1_monitor=$(hyprctl workspaces -j | jq -r '.[] | select(.id == 1) | .monitor')
-
-    if [ "$ws1_monitor" != "$INTERNAL" ] && [ -n "$ws1_monitor" ]; then
-        echo "Workspace 1 detected on $ws1_monitor, moving back to $INTERNAL..."
-        hyprctl dispatch moveworkspacetomonitor "1 $INTERNAL"
-    fi
-}
-
-# Function to monitor and maintain workspace arrangement
-monitor_workspaces() {
-    # Check if HYPRLAND_INSTANCE_SIGNATURE is set
-    if [ -z "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
-        echo "Error: HYPRLAND_INSTANCE_SIGNATURE not set. Monitor mode requires running inside Hyprland."
-        exit 1
-    fi
-
-    local socket_path="/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
-
-    # Check if socket exists
-    if [ ! -S "$socket_path" ]; then
-        echo "Error: Hyprland socket not found at $socket_path"
-        exit 1
-    fi
-
-    echo "Monitoring workspace changes... (Press Ctrl+C to stop)"
-
-    # Subscribe to workspace events
-    socat -U - UNIX-CONNECT:"$socket_path" | while read -r line; do
-        # Check events related to workspace changes
-        if [[ "$line" == workspace* ]] || [[ "$line" == moveworkspace* ]]; then
-            enforce_workspace_1
-        fi
-    done
-}
-
-# Main execution
-case "${1:-bind}" in
-    bind)
-        bind_workspaces
-        ;;
-    enforce)
-        enforce_workspace_1
-        ;;
-    monitor)
-        bind_workspaces
-        monitor_workspaces
-        ;;
-    --help|-h)
-        echo "Usage: $0 [bind|enforce|monitor]"
-        echo ""
-        echo "Commands:"
-        echo "  bind     - Apply workspace bindings (default)"
-        echo "  enforce  - Check and enforce workspace 1 on internal display"
-        echo "  monitor  - Continuously monitor and enforce workspace arrangement"
-        echo ""
-        ;;
-    *)
-        echo "Unknown command: $1"
-        echo "Use --help for usage information"
-        exit 1
-        ;;
-esac
+echo ""
+echo "✓ Workspace arrangement complete!"
+echo "  Workspace 1  → $INTERNAL"
+echo "  Workspaces 2-10 → $external_monitor"
