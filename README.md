@@ -40,10 +40,12 @@ cd hyprland-workspace-manager
 chmod +x hyprland-workspace-manager.sh
 ```
 
-3. (Optional) Move to a location in your PATH:
+3. (Optional) Create a symbolic link to make it accessible from your PATH:
 ```bash
-sudo cp hyprland-workspace-manager.sh /usr/local/bin/hyprland-workspace-manager
+sudo ln -s "$(pwd)/hyprland-workspace-manager.sh" /usr/local/bin/hyprland-workspace-manager
 ```
+
+This creates a symlink so you can run `hyprland-workspace-manager` from anywhere while keeping the script in the repository.
 
 ## Usage
 
