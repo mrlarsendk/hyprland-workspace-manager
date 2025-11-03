@@ -7,8 +7,17 @@
 # Configuration
 STATE_FILE="$HOME/.cache/workspace-manager-state"
 CONFIG_FILE="$HOME/.config/hyprland/workspace-manager.json"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MANAGER_SCRIPT="$(dirname "$SCRIPT_DIR")/hyprland-workspace-manager.sh"
+
+# Find the workspace manager script in PATH
+MANAGER_SCRIPT="$(command -v hyprland-workspace-manager 2>/dev/null)"
+if [ -z "$MANAGER_SCRIPT" ]; then
+    # Fallback: look for it in common locations
+    if [ -x "$HOME/.local/bin/hyprland-workspace-manager" ]; then
+        MANAGER_SCRIPT="$HOME/.local/bin/hyprland-workspace-manager"
+    elif [ -x "/usr/local/bin/hyprland-workspace-manager" ]; then
+        MANAGER_SCRIPT="/usr/local/bin/hyprland-workspace-manager"
+    fi
+fi
 
 # Icon (Nerd Font)
 ICON=""

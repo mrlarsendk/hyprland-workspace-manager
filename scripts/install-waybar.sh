@@ -7,7 +7,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 WAYBAR_SCRIPTS_DIR="$HOME/.config/waybar/scripts"
+LOCAL_BIN="$HOME/.local/bin"
 WAYBAR_CONFIG="$HOME/.config/waybar/config"
 WAYBAR_STYLE="$HOME/.config/waybar/style.css"
 
@@ -48,6 +50,39 @@ else
 fi
 
 echo ""
+echo "Installing workspace manager..."
+
+# Create local bin directory
+mkdir -p "$LOCAL_BIN"
+
+# Install main workspace manager script to ~/.local/bin
+if [ -f "$REPO_ROOT/hyprland-workspace-manager.sh" ]; then
+    cp "$REPO_ROOT/hyprland-workspace-manager.sh" "$LOCAL_BIN/hyprland-workspace-manager"
+    chmod +x "$LOCAL_BIN/hyprland-workspace-manager"
+    echo "✓ Installed main script to $LOCAL_BIN/hyprland-workspace-manager"
+
+    # Check if ~/.local/bin is in PATH
+    if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]; then
+        echo "⚠️  Warning: $LOCAL_BIN is not in your PATH"
+        echo "   Add this to your ~/.bashrc or ~/.zshrc:"
+        echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+        echo ""
+    fi
+else
+    echo "❌ Error: hyprland-workspace-manager.sh not found in $REPO_ROOT"
+    exit 1
+fi
+
+# Copy default config if needed
+CONFIG_DIR="$HOME/.config/hyprland"
+CONFIG_FILE="$CONFIG_DIR/workspace-manager.json"
+mkdir -p "$CONFIG_DIR"
+if [ ! -f "$CONFIG_FILE" ] && [ -f "$REPO_ROOT/workspace-manager.json" ]; then
+    cp "$REPO_ROOT/workspace-manager.json" "$CONFIG_FILE"
+    echo "✓ Created default config at $CONFIG_FILE"
+fi
+
+echo ""
 echo "Installing waybar module..."
 
 # Create waybar scripts directory
@@ -80,7 +115,7 @@ echo '       "return-type": "json",'
 echo '       "interval": 30,'
 echo '       "exec": "~/.config/waybar/scripts/waybar-workspace-manager.sh status",'
 echo '       "on-click": "~/.config/waybar/scripts/waybar-workspace-manager.sh menu",'
-echo '       "signal": 8,'
+echo '       "signal": 12,'
 echo '       "escape": true'
 echo '   }'
 echo ""
