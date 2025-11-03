@@ -1,0 +1,25 @@
+{
+  "internal_monitor": "eDP-1",
+  "profiles": {
+    "HDMI-A-1": {
+      "name": "HDMI Monitor",
+      "internal_workspaces": [1, 2, 3, 4, 5],
+      "external_workspaces": [6, 7, 8, 9, 10]
+    },
+    "DP-7": {
+      "name": "Office DisplayPort Monitor",
+      "internal_workspaces": [1],
+      "external_workspaces": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+    "DP-1": {
+      "name": "DisplayPort Monitor",
+      "internal_workspaces": [1],
+      "external_workspaces": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+    "default": {
+      "name": "Default Configuration",
+      "internal_workspaces": [1],
+      "external_workspaces": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+    }
+  }
+}

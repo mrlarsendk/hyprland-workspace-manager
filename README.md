@@ -1,13 +1,14 @@
 # Hyprland Workspace Manager
 
-Simple manual workspace arrangement script for Hyprland on dual monitor setups. Forces workspace 1 to your internal display while routing all other workspaces to your external monitor.
+Configurable workspace arrangement script for Hyprland on dual monitor setups. Uses JSON configuration to define different workspace layouts for different external monitors.
 
 ## Features
 
-- **One-Time Execution**: Run manually or via keybinding to force workspace arrangement
-- **Auto-detection**: Automatically detects and uses any connected external monitor
-- **Monitor Independence**: Works with any external monitor name (DP-1, DP-6, HDMI-A-1, etc.)
+- **JSON Configuration**: Define custom workspace arrangements per external monitor
+- **Monitor-Specific Profiles**: Different layouts for home monitor, office monitor, etc.
+- **Auto-detection**: Automatically detects connected monitors and applies the right profile
 - **Workspace Migration**: Moves existing workspaces to correct monitors before applying bindings
+- **One-Time Execution**: Run manually or via keybinding to force workspace arrangement
 - **Wayland Native**: Built specifically for Hyprland on Wayland
 
 ## Requirements
@@ -101,29 +102,88 @@ bind = $mainMod, W, exec, /path/to/hyprland-workspace-manager.sh
 
 Replace `$mainMod` with your preferred modifier key (e.g., `SUPER`, `ALT`, etc.).
 
+## Configuration
+
+The script uses a JSON configuration file located at `~/.config/hyprland/workspace-manager.json`. On first run, a default configuration will be automatically created.
+
+### Configuration File Structure
+
+```json
+{
+  "internal_monitor": "eDP-1",
+  "profiles": {
+    "HDMI-A-1": {
+      "name": "HDMI Monitor",
+      "internal_workspaces": [1, 2, 3, 4, 5],
+      "external_workspaces": [6, 7, 8, 9, 10]
+    },
+    "DP-7": {
+      "name": "Office DisplayPort Monitor",
+      "internal_workspaces": [1],
+      "external_workspaces": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+    "default": {
+      "name": "Default Configuration",
+      "internal_workspaces": [1],
+      "external_workspaces": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+    }
+  }
+}
+```
+
+### Customizing Profiles
+
+1. **Edit the config file**:
+   ```bash
+   nano ~/.config/hyprland/workspace-manager.json
+   ```
+
+2. **Add a new monitor profile**:
+   - Find your monitor name: `hyprctl monitors`
+   - Add a new profile with your monitor's name
+   - Define which workspaces go on internal vs external
+
+3. **Example: Split workspaces evenly**:
+   ```json
+   "HDMI-A-1": {
+     "name": "Home Monitor",
+     "internal_workspaces": [1, 2, 3, 4, 5],
+     "external_workspaces": [6, 7, 8, 9, 10]
+   }
+   ```
+
+4. **Example: Most workspaces on external**:
+   ```json
+   "DP-1": {
+     "name": "Main Work Monitor",
+     "internal_workspaces": [1],
+     "external_workspaces": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+   }
+   ```
+
+The script will automatically use the appropriate profile when you connect different monitors. If no specific profile exists for a monitor, it will use the "default" profile.
+
 ## How It Works
 
 The script performs the following actions:
 
-1. **Detects Monitors**: Automatically identifies your internal display (eDP-1) and any connected external monitor
-2. **Moves Workspaces**: Checks current workspace locations and moves them to correct monitors if needed
-3. **Binds Workspaces**:
-   - Workspace 1 → Internal display (eDP-1) with persistent and default flags
-   - Workspaces 2-10 → External monitor with default flag
+1. **Loads Configuration**: Reads workspace profiles from `~/.config/hyprland/workspace-manager.json`
+2. **Detects Monitors**: Identifies your internal display and connected external monitor
+3. **Selects Profile**: Chooses the appropriate workspace layout based on the external monitor name
+4. **Moves Workspaces**: Relocates existing workspaces to their configured monitors
+5. **Applies Bindings**: Sets persistent workspace-to-monitor bindings
 
-## Configuration
+### Finding Your Monitor Names
 
-The internal monitor is hardcoded as `eDP-1`. To change this, edit the script:
-
-```bash
-# Monitor names
-INTERNAL="eDP-1"  # Change this to your internal monitor name
-```
-
-To find your monitor names, run:
+To find your monitor names for configuration:
 ```bash
 hyprctl monitors
 ```
+
+Look for the `name` field in the output. Common names include:
+- `eDP-1` - Internal laptop display
+- `HDMI-A-1` - HDMI port
+- `DP-1`, `DP-2`, etc. - DisplayPort connections
 
 ## Troubleshooting
 
@@ -140,6 +200,15 @@ hyprctl monitors
 **Command not found errors:**
 - Ensure `jq` is installed: `which jq`
 - Install jq if missing: `sudo pacman -S jq` (Arch) or `sudo apt install jq` (Ubuntu/Debian)
+
+**Wrong workspace configuration applied:**
+- Check which monitor is detected: `hyprctl monitors`
+- Verify your config has a profile for that monitor: `cat ~/.config/hyprland/workspace-manager.json`
+- Add a new profile for your monitor or update the "default" profile
+
+**Configuration file errors:**
+- Validate JSON syntax: `jq . ~/.config/hyprland/workspace-manager.json`
+- Delete and re-run script to regenerate default: `rm ~/.config/hyprland/workspace-manager.json && ./hyprland-workspace-manager.sh`
 
 ## License
 

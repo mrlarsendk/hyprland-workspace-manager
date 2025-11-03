@@ -4,19 +4,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Hyprland Workspace Manager is a simple bash script for manual workspace arrangement in Hyprland dual monitor setups. When executed, it forces workspace 1 to the internal display (eDP-1) and routes all other workspaces (2-10) to an external monitor.
+Hyprland Workspace Manager is a configurable bash script for workspace arrangement in Hyprland dual monitor setups. It uses JSON configuration to define different workspace layouts for different external monitors, allowing users to have monitor-specific workspace arrangements.
 
 ## Architecture
 
-This is a single-file bash script (`hyprland-workspace-manager.sh`) that executes once when run. The script:
+The project consists of:
 
-1. **Detects monitors**: Automatically identifies the internal monitor (eDP-1) and the first connected external monitor using `hyprctl monitors -j`.
+1. **hyprland-workspace-manager.sh**: Main bash script that executes once when run
+2. **workspace-manager.json**: Default JSON configuration file with monitor profiles
 
-2. **Moves existing workspaces**: Checks if any workspaces are on the wrong monitor and moves them using `hyprctl dispatch moveworkspacetomonitor`.
+### Script Flow
 
-3. **Applies bindings**: Binds workspace 1 to the internal monitor with `persistent:true` and `default:true` flags, and binds workspaces 2-10 to the external monitor using `hyprctl keyword workspace` commands.
+1. **Configuration Management**:
+   - Checks for user config at `~/.config/hyprland/workspace-manager.json`
+   - Creates default config from `workspace-manager.json` if not found
+   - Reads internal monitor name and workspace profiles from JSON
 
-The script requires both monitors to be connected and will exit with an error if either is missing.
+2. **Monitor Detection**:
+   - Identifies internal monitor and first connected external monitor using `hyprctl monitors -j`
+   - Selects appropriate workspace profile based on external monitor name
+   - Falls back to "default" profile if no specific profile exists
+
+3. **Workspace Arrangement**:
+   - Moves existing workspaces to their configured monitors using `hyprctl dispatch moveworkspacetomonitor`
+   - Applies persistent bindings using `hyprctl keyword workspace` commands
+   - Workspace 1 gets `persistent:true` flag on internal monitor
+
+### Configuration Format
+
+The JSON config allows polymorphic behavior based on connected monitor:
+
+```json
+{
+  "internal_monitor": "eDP-1",
+  "profiles": {
+    "HDMI-A-1": { "name": "...", "internal_workspaces": [...], "external_workspaces": [...] },
+    "default": { ... }
+  }
+}
+```
+
+Each profile defines which workspaces go on internal vs external monitors.
 
 ## Key Dependencies
 
@@ -41,8 +69,11 @@ hyprctl dispatch moveworkspacetomonitor "1 DP-1"  # Move to external
 
 ## Configuration Points
 
-- **INTERNAL variable** (line 8): Hardcoded to "eDP-1". This is the only monitor name that needs modification for different internal display names.
-- **Workspace range** (line 47): Currently binds workspaces 2-10 to external monitor. Adjust the `{2..10}` range if more workspaces are needed.
+- **User config location**: `~/.config/hyprland/workspace-manager.json`
+- **Default config**: `workspace-manager.json` in the repository root
+- **Internal monitor**: Configured via JSON `internal_monitor` field (default: "eDP-1")
+- **Workspace ranges**: Defined per-profile in JSON using `internal_workspaces` and `external_workspaces` arrays
+- **Adding new monitors**: Create new profile entries in the JSON config with the monitor name as key
 
 ## Common Development Tasks
 
@@ -50,7 +81,9 @@ When modifying this script:
 
 - Use `hyprctl monitors` to verify monitor detection logic
 - Use `hyprctl workspaces -j` to inspect current workspace states
-- The script automatically detects the first available external monitor (any monitor that is not eDP-1)
+- Validate JSON config: `jq . ~/.config/hyprland/workspace-manager.json`
+- Test with different monitors by editing the config and running the script
+- The script automatically detects the first available external monitor (any monitor not matching internal_monitor)
 
 ## Integration Points
 
