@@ -72,6 +72,59 @@ sudo cp hyprland-workspace-manager.sh /usr/local/bin/hyprland-workspace-manager
 
 Choose symlink if you want easy updates and plan to keep the repository. Choose copy if you want a standalone installation.
 
+## Uninstallation
+
+To remove Hyprland Workspace Manager from your system, use the provided uninstall script:
+
+```bash
+./uninstall.sh
+```
+
+The uninstaller will:
+1. Scan for installed files in common locations
+2. Ask whether you want to remove your configuration file (or keep it for future use)
+3. Remove all installed components
+4. Provide instructions for manual cleanup of waybar/Hyprland configs
+
+### Uninstall Options
+
+**Preview what will be removed (dry run):**
+```bash
+./uninstall.sh --dry-run
+```
+
+**Remove everything including configuration:**
+```bash
+./uninstall.sh --remove-config
+```
+
+**Keep your configuration file:**
+```bash
+./uninstall.sh --keep-config
+```
+
+**Get help:**
+```bash
+./uninstall.sh --help
+```
+
+### What Gets Removed
+
+The uninstaller removes:
+- Main script from `~/.local/bin/` or `/usr/local/bin/`
+- Waybar integration script from `~/.config/waybar/scripts/`
+- State file from `~/.cache/workspace-manager-state`
+- Configuration file from `~/.config/hyprland/workspace-manager.json` (optional)
+
+### Manual Cleanup
+
+After uninstallation, you should manually remove any references in:
+- `~/.config/waybar/config` - Remove the `custom/workspace-manager` module
+- `~/.config/waybar/style.css` - Remove any custom styling for the module
+- `~/.config/hypr/hyprland.conf` - Remove `exec-once` or keybinding entries
+
+The uninstaller will provide specific instructions for these manual steps.
+
 ## Usage
 
 ### Basic Command
