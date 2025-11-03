@@ -40,12 +40,35 @@ cd hyprland-workspace-manager
 chmod +x hyprland-workspace-manager.sh
 ```
 
-3. (Optional) Create a symbolic link to make it accessible from your PATH:
+3. (Optional) Make the script accessible from anywhere:
+
+**Option A: Symbolic link (recommended)**
 ```bash
 sudo ln -s "$(pwd)/hyprland-workspace-manager.sh" /usr/local/bin/hyprland-workspace-manager
 ```
 
-This creates a symlink so you can run `hyprland-workspace-manager` from anywhere while keeping the script in the repository.
+**Option B: Copy to PATH**
+```bash
+sudo cp hyprland-workspace-manager.sh /usr/local/bin/hyprland-workspace-manager
+```
+
+**Choosing between symlink and copy:**
+
+*Symlink benefits:*
+- Get updates automatically with `git pull` - no need to re-install
+- Single source of truth - changes in the repo are immediately active
+- Easier if you want to modify the script yourself
+- No file duplication
+
+*Symlink considerations:*
+- Breaks if you move or delete the repository directory
+- Requires being careful with `git reset --hard` or branch switching
+
+*Copy benefits:*
+- Independent of the repository - can move/delete the repo freely
+- More stable if you don't need updates
+
+Choose symlink if you want easy updates and plan to keep the repository. Choose copy if you want a standalone installation.
 
 ## Usage
 
